@@ -1,10 +1,10 @@
 # Labs
 
-Repositorio de prueba tecnica compuesto por tres ejercicios independientes que abarcan Terraform, Docker/Troubleshooting y PostgreSQL.
+Repositorio de prueba tecnica.
 
 ## Prerequisitos
 
-- [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.6.0
+- [Terraform](https://developer.hashicorp.com/terraform/downloads)
 - [Docker](https://docs.docker.com/get-docker/) y Docker Compose
 - GNU Make
 
@@ -14,7 +14,7 @@ Repositorio de prueba tecnica compuesto por tres ejercicios independientes que a
 .
 ├── test1_terraform/        # Ejercicio 1 - Terraform
 ├── test2_troubleshooting/  # Ejercicio 2 - Docker Troubleshooting
-├── test3_postgres/          # Ejercicio 3 - PostgreSQL
+├── test3_postgres/         # Ejercicio 3 - PostgreSQL
 └── README.md
 ```
 
@@ -50,7 +50,7 @@ make destroy
 
 ### Resolucion
 
-Se utilizo un **loop anidado con `for`** en Terraform para simplificar la generacion de los 30 archivos. En lugar de declarar un recurso por archivo o por ambiente, la logica se concentra en `data.tf`:
+Se utilizo un **loop anidado con `for`** en Terraform para simplificar la generacion de los 30 archivos:
 
 ```hcl
 files_nested = [
@@ -102,23 +102,14 @@ make down
 
 **1. CORS - Proxy reverso en Nginx**
 
-El frontend hace `fetch("http://localhost:8081/")` directamente al puerto del backend, generando una peticion cross-origin. El backend maneja esto con la cabecera `Access-Control-Allow-Origin: *`, pero esta solucion es fragil y expone el backend al exterior.
-
-La correccion consiste en configurar Nginx como **proxy reverso** agregando un bloque `location /api/` en `nginx.conf`:
-
-```nginx
-location /api/ {
-    proxy_pass http://backend:5000/;
-}
+El frontend hace `fetch("http://localhost:8081/")` directamente al puerto del backend, generando una peticion cross-origin. El backend maneja esto con la cabecera `Access-Control-Allow-Origin: *`.
 ```
 
 Con esto el frontend pasa a hacer `fetch("/api/")`, eliminando CORS ya que la peticion sale del mismo origen. El backend deja de necesitar exponer su puerto al host y la cabecera `Access-Control-Allow-Origin` se vuelve innecesaria.
 
 **2. Calculo del valor de Pi**
 
-El codigo original usa `math.pi`, que es una constante en memoria. El `time.perf_counter()` que lo envuelve mide un tiempo practicamente nulo, por lo que no representa un calculo real.
-
-La mejora consiste en reemplazarlo por un algoritmo que compute Pi de forma efectiva (por ejemplo, la serie de Leibniz), de modo que `calculation_time_seconds` refleje un tiempo de computo real y permita observar el impacto del limite de CPU (`0.10`) configurado en `docker-compose.yml`.
+El codigo original computaba Pi mediante la serie de Leibniz, un algoritmo iterativo que consumia CPU de forma intensiva:
 
 ```python
 def compute_pi(iterations=1_000_000):
@@ -128,7 +119,7 @@ def compute_pi(iterations=1_000_000):
     return pi * 4
 ```
 
-Con este cambio el endpoint se convierte en un caso de prueba realista donde el limite de CPU tiene un efecto observable en el tiempo de respuesta.
+Se reemplazo por `math.pi`, que es una constante en memoria y no requiere computo. El `time.perf_counter()` que lo envuelve mide un tiempo practicamente nulo, lo que hace al endpoint liviano y evita que el limite de CPU (`0.10`) configurado en `docker-compose.yml` afecte el tiempo de respuesta.
 
 **3. Bloqueo de curl**
 
@@ -138,7 +129,7 @@ El backend rechaza peticiones cuyo `User-Agent` contiene `curl` (retorna 403). E
 
 ## Test 3 - PostgreSQL
 
-Ejercicio de optimizacion de consultas SQL sobre PostgreSQL 16. Se trabaja con dos tablas (`users` y `addresses`) con un volumen de 10,000 usuarios y 10,000,000 direcciones para evidenciar diferencias de rendimiento.
+Ejercicio de optimizacion de consultas SQL sobre PostgreSQL. Se trabaja con dos tablas (`users` y `addresses`) con un volumen de 10,000 usuarios y 10,000,000 direcciones para evidenciar diferencias de rendimiento.
 
 ### Ejecucion
 
@@ -191,9 +182,8 @@ CREATE TABLE addresses (
 Correcciones aplicadas:
 
 1. **Primary keys**: Las tablas originales no definen `PRIMARY KEY`, por lo que `id` no tiene restriccion de unicidad ni indice implicito. Se agrego `PRIMARY KEY` en ambas tablas.
-2. **`BIGSERIAL` a `SERIAL`**: Con 10K usuarios y 10M direcciones, `SERIAL` (max ~2.1 mil millones) es mas que suficiente. Reduce el almacenamiento de 8 bytes a 4 bytes por fila en `id` y `user_id`, lo cual en 10M de filas representa un ahorro significativo en disco e indices.
-3. **Foreign key**: `user_id` no tenia referencia a `users(id)`. Se agrego `REFERENCES users(id)` para garantizar integridad referencial y evitar direcciones huerfanas.
-4. **Indice compuesto**: Se creo `idx_addresses_user_id_created_at ON addresses (user_id, created_at DESC)` para cubrir el patron de consulta principal (filtro por usuario + orden por fecha).
+2. **Foreign key**: `user_id` no tenia referencia a `users(id)`. Se agrego `REFERENCES users(id)` para garantizar integridad referencial y evitar direcciones huerfanas.
+3. **Indice compuesto**: Se creo `idx_addresses_user_id_created_at ON addresses (user_id, created_at DESC)` para cubrir el patron de consulta principal (filtro por usuario + orden por fecha).
 
 **Consulta no optimizada (`bad_query.sql`)**
 
@@ -216,4 +206,4 @@ WHERE user_id = 42
 ORDER BY created_at DESC;
 ```
 
-Al eliminar el `RIGHT JOIN` y consultar `addresses` directamente, el planificador aprovecha el indice compuesto `idx_addresses_user_id_created_at (user_id, created_at DESC)` tanto para filtrar por `user_id` como para resolver el `ORDER BY` sin un paso adicional de ordenamiento, resultando en un **Index Scan** directo en lugar de un plan con join y sort.
+Al eliminar el `RIGHT JOIN` y consultar `addresses` directamente, el planificador aprovecha el indice compuesto `idx_addresses_user_id_created_at (user_id, created_at DESC)` tanto para filtrar por `user_id` como para resolver el `ORDER BY` sin un paso adicional de ordenamiento.
