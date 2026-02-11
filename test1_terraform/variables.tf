@@ -1,5 +1,6 @@
 variable "env" {
-  type = string
+  type    = string
+  default = null
 }
 
 variable "user_input" {
