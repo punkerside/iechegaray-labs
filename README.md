@@ -1,4 +1,4 @@
-# iechegaray-labs
+# Labs
 
 Repositorio de prueba tecnica compuesto por tres ejercicios independientes que abarcan Terraform, Docker/Troubleshooting y PostgreSQL.
 
