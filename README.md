@@ -1,20 +1,20 @@
 # Labs
 
-Repositorio de prueba tecnica.
+Technical test repository.
 
-## Prerequisitos
+## Prerequisites
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads)
-- [Docker](https://docs.docker.com/get-docker/) y Docker Compose
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
 - GNU Make
 
-## Estructura del proyecto
+## Project Structure
 
 ```
 .
-├── test1_terraform/        # Ejercicio 1 - Terraform
-├── test2_troubleshooting/  # Ejercicio 2 - Docker Troubleshooting
-├── test3_postgres/         # Ejercicio 3 - PostgreSQL
+├── test1_terraform/        # Exercise 1 - Terraform
+├── test2_troubleshooting/  # Exercise 2 - Docker Troubleshooting
+├── test3_postgres/         # Exercise 3 - PostgreSQL
 └── README.md
 ```
 
@@ -22,19 +22,19 @@ Repositorio de prueba tecnica.
 
 ## Test 1 - Terraform
 
-Genera archivos de texto en tres carpetas que representan ambientes (`QA`, `STG`, `PRD`) utilizando el provider `local`. Se crean 10 archivos por ambiente (30 en total) mediante `count` y `flatten`, cada uno con un texto personalizable por ambiente a traves de la variable `user_text`.
+Generates text files in three folders representing environments (`QA`, `STG`, `PRD`) using the `local` provider. 10 files per environment (30 total) are created using `count` and `flatten`, each with a customizable text per environment through the `user_text` variable.
 
-### Archivos principales
+### Main Files
 
-| Archivo | Descripcion |
+| File | Description |
 |---|---|
-| `main.tf` | Recurso `local_file` que genera los archivos |
-| `data.tf` | Locals con la logica de iteracion (`folders`, `files_nested`, `files`) |
-| `variables.tf` | Variable `user_text` (mapa por ambiente) |
-| `versions.tf` | Restricciones de version de Terraform y providers |
-| `Makefile` | Atajos para `init`, `apply` y `destroy` |
+| `main.tf` | `local_file` resource that generates the files |
+| `data.tf` | Locals with the iteration logic (`folders`, `files_nested`, `files`) |
+| `variables.tf` | `user_text` variable (map per environment) |
+| `versions.tf` | Terraform and provider version constraints |
+| `Makefile` | Shortcuts for `init`, `apply`, and `destroy` |
 
-### Ejecucion
+### Usage
 
 ```bash
 cd test1_terraform
@@ -42,15 +42,15 @@ make init
 make apply
 ```
 
-Para destruir los recursos:
+To destroy resources:
 
 ```bash
 make destroy
 ```
 
-### Resolucion
+### Solution
 
-Se utilizo un **loop anidado con `for`** en Terraform para simplificar la generacion de los 30 archivos:
+A **nested `for` loop** in Terraform was used to simplify the generation of the 30 files:
 
 ```hcl
 files_nested = [
@@ -66,50 +66,49 @@ files_nested = [
 files = flatten(local.files_nested)
 ```
 
-- El `for` externo itera sobre los ambientes (`QA`, `STG`, `PRD`).
-- El `for` interno genera 10 objetos por ambiente con el indice y la ruta del archivo.
-- `flatten()` convierte la lista de listas en una lista plana de 30 elementos.
-- Un unico recurso `local_file` con `count = length(local.files)` crea todos los archivos, evitando duplicar bloques de recursos.
-- El texto de cada archivo se personaliza por ambiente mediante la variable `user_text` (tipo `map(string)`), permitiendo cambiar el contenido sin modificar la logica del recurso.
+- The outer `for` iterates over the environments (`QA`, `STG`, `PRD`).
+- The inner `for` generates 10 objects per environment with the index and file path.
+- `flatten()` converts the list of lists into a flat list of 30 elements.
+- A single `local_file` resource with `count = length(local.files)` creates all the files, avoiding duplicate resource blocks.
+- Each file's text is customized per environment through the `user_text` variable (`map(string)` type), allowing content changes without modifying the resource logic.
 
 ---
 
 ## Test 2 - Troubleshooting
 
-Aplicacion con arquitectura frontend/backend desplegada con Docker Compose. El objetivo es identificar y resolver problemas de conectividad y configuracion.
+Application with a frontend/backend architecture deployed with Docker Compose. The goal is to identify and resolve connectivity and configuration issues.
 
-| Componente | Tecnologia | Puerto expuesto |
+| Component | Technology | Exposed Port |
 |---|---|---|
 | Frontend | Nginx (Alpine) | `8080 -> 80` |
 | Backend | Flask (Python 3.11) | `8081 -> 5000` |
 
-### Ejecucion
+### Usage
 
 ```bash
 cd test2_troubleshooting
 make up
 ```
 
-Acceder al frontend en `http://localhost:8080` y probar el boton "CALL BACKEND".
+Access the frontend at `http://localhost:8080` and test the "CALL BACKEND" button.
 
-Para detener:
+To stop:
 
 ```bash
 make down
 ```
 
-### Resolucion
+### Solution
 
-**1. CORS - Proxy reverso en Nginx**
+**1. CORS - Nginx Reverse Proxy**
 
-El frontend hace `fetch("http://localhost:8081/")` directamente al puerto del backend, generando una peticion cross-origin. El backend maneja esto con la cabecera `Access-Control-Allow-Origin: *`.
-```
+The frontend makes a `fetch("http://localhost:8081/")` directly to the backend port, generating a cross-origin request. The backend handles this with the `Access-Control-Allow-Origin: *` header.
 
-Con esto el frontend pasa a hacer `fetch("/api/")`, eliminando CORS ya que la peticion sale del mismo origen. El backend deja de necesitar exponer su puerto al host y la cabecera `Access-Control-Allow-Origin` se vuelve innecesaria.
+With this change, the frontend switches to `fetch("/api/")`, eliminating CORS since the request originates from the same origin. The backend no longer needs to expose its port to the host, and the `Access-Control-Allow-Origin` header becomes unnecessary.
 
-**2. Calculo del valor de Pi**
+**2. Pi Value Calculation**
 
-El codigo original computaba Pi mediante la serie de Leibniz, un algoritmo iterativo que consumia CPU de forma intensiva:
+The original code computed Pi using the Leibniz series, a CPU-intensive iterative algorithm:
 
 ```python
 def compute_pi(iterations=1_000_000):
@@ -119,47 +118,47 @@ def compute_pi(iterations=1_000_000):
     return pi * 4
 ```
 
-Se reemplazo por `math.pi`, que es una constante en memoria y no requiere computo. El `time.perf_counter()` que lo envuelve mide un tiempo practicamente nulo, lo que hace al endpoint liviano y evita que el limite de CPU (`0.10`) configurado en `docker-compose.yml` afecte el tiempo de respuesta.
+It was replaced with `math.pi`, which is an in-memory constant and requires no computation. The `time.perf_counter()` wrapping it measures virtually zero time, making the endpoint lightweight and preventing the CPU limit (`0.10`) configured in `docker-compose.yml` from affecting response time.
 
-**3. Bloqueo de curl**
+**3. Curl Blocking**
 
-El backend rechaza peticiones cuyo `User-Agent` contiene `curl` (retorna 403). Esto dificulta pruebas rapidas desde terminal pero no afecta al frontend ya que el navegador envia su propio User-Agent.
+The backend rejects requests whose `User-Agent` contains `curl` (returns 403). This hinders quick testing from the terminal but does not affect the frontend since the browser sends its own User-Agent.
 
 ---
 
 ## Test 3 - PostgreSQL
 
-Ejercicio de optimizacion de consultas SQL sobre PostgreSQL. Se trabaja con dos tablas (`users` y `addresses`) con un volumen de 10,000 usuarios y 10,000,000 direcciones para evidenciar diferencias de rendimiento.
+SQL query optimization exercise on PostgreSQL. It works with two tables (`users` and `addresses`) with a volume of 10,000 users and 10,000,000 addresses to demonstrate performance differences.
 
-### Ejecucion
+### Usage
 
 ```bash
 cd test3_postgres
 
-# Levantar la base de datos
+# Start the database
 make up
 
-# En otra terminal, construir la imagen del cliente psql
+# In another terminal, build the psql client image
 make build
 
-# Generar datos de prueba
+# Generate test data
 make generate_data
 
-# Ejecutar consulta no optimizada
+# Run the non-optimized query
 make bad_query
 
-# Ejecutar consulta optimizada
+# Run the optimized query
 make optimized_query
 
-# Detener la base de datos
+# Stop the database
 make down
 ```
 
-### Resolucion
+### Solution
 
-**Mejoras al esquema**
+**Schema Improvements**
 
-Esquema original:
+Original schema:
 
 ```sql
 CREATE TABLE users (
@@ -179,13 +178,13 @@ CREATE TABLE addresses (
 );
 ```
 
-Correcciones aplicadas:
+Applied corrections:
 
-1. **Primary keys**: Las tablas originales no definen `PRIMARY KEY`, por lo que `id` no tiene restriccion de unicidad ni indice implicito. Se agrego `PRIMARY KEY` en ambas tablas.
-2. **Foreign key**: `user_id` no tenia referencia a `users(id)`. Se agrego `REFERENCES users(id)` para garantizar integridad referencial y evitar direcciones huerfanas.
-3. **Indice compuesto**: Se creo `idx_addresses_user_id_created_at ON addresses (user_id, created_at DESC)` para cubrir el patron de consulta principal (filtro por usuario + orden por fecha).
+1. **Primary keys**: The original tables did not define a `PRIMARY KEY`, so `id` had no uniqueness constraint or implicit index. `PRIMARY KEY` was added to both tables.
+2. **Foreign key**: `user_id` had no reference to `users(id)`. `REFERENCES users(id)` was added to ensure referential integrity and prevent orphaned addresses.
+3. **Composite index**: `idx_addresses_user_id_created_at ON addresses (user_id, created_at DESC)` was created to cover the main query pattern (filter by user + order by date).
 
-**Consulta no optimizada (`bad_query.sql`)**
+**Non-optimized query (`bad_query.sql`)**
 
 ```sql
 SELECT a.*
@@ -195,9 +194,9 @@ WHERE u.id = 42
 ORDER BY a.created_at DESC;
 ```
 
-El `RIGHT JOIN` obliga al planificador a considerar ambas tablas aunque el `SELECT` solo necesita columnas de `addresses`. El join genera un paso adicional innecesario que no aporta datos al resultado.
+The `RIGHT JOIN` forces the planner to consider both tables even though the `SELECT` only needs columns from `addresses`. The join generates an unnecessary additional step that does not contribute data to the result.
 
-**Consulta optimizada (`optimized_query.sql`)**
+**Optimized query (`optimized_query.sql`)**
 
 ```sql
 SELECT *
@@ -206,4 +205,4 @@ WHERE user_id = 42
 ORDER BY created_at DESC;
 ```
 
-Al eliminar el `RIGHT JOIN` y consultar `addresses` directamente, el planificador aprovecha el indice compuesto `idx_addresses_user_id_created_at (user_id, created_at DESC)` tanto para filtrar por `user_id` como para resolver el `ORDER BY` sin un paso adicional de ordenamiento.
+By removing the `RIGHT JOIN` and querying `addresses` directly, the planner leverages the composite index `idx_addresses_user_id_created_at (user_id, created_at DESC)` both to filter by `user_id` and to resolve the `ORDER BY` without an additional sorting step.
