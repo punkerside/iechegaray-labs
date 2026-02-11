@@ -1,16 +1,8 @@
+import math
 import time
 from flask import Flask, jsonify, make_response, request
 
 app = Flask(__name__)
-
-
-def calculate_pi(iterations: int = 1_000_000) -> float:
-    pi = 0.0
-    sign = 1.0
-    for i in range(iterations):
-        pi += sign / (2 * i + 1)
-        sign *= -1.0
-    return 4.0 * pi
 
 
 @app.get("/")
@@ -23,7 +15,7 @@ def root():
         )
 
     start = time.perf_counter()
-    pi_value = calculate_pi()
+    pi_value = math.pi
     duration = time.perf_counter() - start
 
     response = make_response(
@@ -34,6 +26,7 @@ def root():
         )
     )
 
+    response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["X-HEADER-ADD"] = "Heres is how we could add EXTRA headers"
 
     return response
