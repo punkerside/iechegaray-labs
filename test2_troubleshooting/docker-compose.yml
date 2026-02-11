@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "8081:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.10"
