@@ -1,3 +1,4 @@
+\timing
 SELECT a.*
 FROM users u
 RIGHT JOIN addresses a
