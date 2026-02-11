@@ -1,9 +1,9 @@
-variable "env" {
-  type    = string
-  default = null
-}
+variable "user_text" {
+  type = map(string)
 
-variable "user_input" {
-  type    = string
-  default = null
+  default = {
+    QA  = "See its easy"
+    STG = "Testing staging"
+    PRD = "Production ready"
+  }
 }
