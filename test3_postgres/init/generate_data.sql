@@ -12,8 +12,8 @@ SELECT
     now() - (random() * interval '5 years') AS created_at
 FROM generate_series(1, 10000) AS s(i);
 
--- 1,000,000 addresses
--- 100 addresses per user
+-- 10,000,000 addresses
+-- 1,000 addresses per user
 -- created_at randomized within the last 5 years
 INSERT INTO addresses (user_id, street, city, country, created_at)
 SELECT
@@ -26,3 +26,6 @@ FROM users AS u
 JOIN LATERAL generate_series(1, 1000) AS gs(addr_id) ON true;
 
 COMMIT;
+
+ANALYZE users;
+ANALYZE addresses;
